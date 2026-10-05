@@ -122,13 +122,16 @@ Write-Host "`n[6/7] Compiling standalone Windows installer (PetShopPOS-Setup.exe
 $exeSize = (Get-Item $installerExe).Length / 1MB
 Write-Host ("  - Installer generated: {0:N2} MB" -f $exeSize) -ForegroundColor Green
 
-# 7. Copy to Downloads folder
+# 7. Copy to Downloads folder & Refresh Shell Icon Cache
 Write-Host "`n[7/7] Copying installer to Downloads folder..." -ForegroundColor Yellow
+$downloadsAlt = "C:\Users\LENOVO\Downloads\KasirPetShop-Setup.exe"
+
 if (Test-Path (Split-Path $downloadsDest)) {
     $copied = $false
     for ($i = 0; $i -lt 5; $i++) {
         try {
             Copy-Item $installerExe $downloadsDest -Force
+            Copy-Item $installerExe $downloadsAlt -Force
             $copied = $true
             break
         } catch {
@@ -137,9 +140,17 @@ if (Test-Path (Split-Path $downloadsDest)) {
     }
     if ($copied) {
         Write-Host "  - Copied to: $downloadsDest" -ForegroundColor Green
+        Write-Host "  - Copied to: $downloadsAlt" -ForegroundColor Green
     } else {
         Write-Warning "  - File is currently locked by a scanner. Ready at: $installerExe"
     }
+
+    # Refresh Windows Shell Icon Cache so Explorer displays new icon immediately
+    try {
+        if (Test-Path "$env:SystemRoot\system32\ie4uinit.exe") {
+            Start-Process "$env:SystemRoot\system32\ie4uinit.exe" -ArgumentList "-show" -Wait -WindowStyle Hidden
+        }
+    } catch { }
 }
 
 Write-Host "`n==========================================================" -ForegroundColor Cyan
