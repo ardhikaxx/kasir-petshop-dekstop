@@ -1,7 +1,7 @@
 <?php
 
-test('the application returns a successful response', function () {
+test('root route redirects to pos cashier', function () {
     $response = $this->get('/');
 
-    $response->assertStatus(200);
+    $response->assertRedirect('/pos');
 });
