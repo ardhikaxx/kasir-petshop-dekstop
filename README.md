@@ -167,7 +167,35 @@ kasir-petshop-desktop/
 
 ---
 
-## 📄 Lisensi
+## 📚 Dokumentasi Sistem
 
-Proyek ini dirilis di bawah lisensi [MIT License](LICENSE).
-Bebas digunakan dan dikembangkan untuk kebutuhan operasional pet shop atau klinik hewan Anda.
+* [📖 **DOKUMENTASI.md**](./DOKUMENTASI.md) — Struktur teknis, relasi database SQLite, arsitektur desktop, dan alur bisnis POS.
+* [⚖️ **LICENSE**](./LICENSE) — Lisensi resmi [MIT License](./LICENSE).
+* [🛡️ **SECURITY.md**](./SECURITY.md) — Kebijakan keamanan data lokal & pelaporan celah (*Responsible Disclosure*).
+* [🤝 **CONTRIBUTING.md**](./CONTRIBUTING.md) — Pedoman kontribusi kode, standar PSR-12 Pint, dan workflow Git.
+* [📜 **CODE_OF_CONDUCT.md**](./CODE_OF_CONDUCT.md) — Pedoman perilaku komunitas pengembang.
+* [💬 **SUPPORT.md**](./SUPPORT.md) — Kanal bantuan teknis, troubleshooting, dan kontak resmi pengembang.
+* [📋 **CHANGELOG.md**](./CHANGELOG.md) — Riwayat rilis fitur terstruktur (*Keep a Changelog* & SemVer).
+* [📚 **CITATION.md**](./CITATION.md) — Format sitasi karya untuk keperluan penelitian dan akademik.
+
+---
+
+## 💖 Dukungan & Donasi
+
+Jika proyek **Kasir Pet Shop Desktop** ini bermanfaat bagi Anda dan telah menghemat banyak waktu operasional toko Anda, Anda dapat menunjukkan apresiasi dengan memberikan traktiran kopi (donasi) melalui pemindaian kode QRIS di bawah ini:
+
+<p align="center">
+  <img src="./qris.png" alt="QRIS Donasi" width="300"/>
+</p>
+
+> Donasi sepenuhnya bersifat sukarela dan tidak mengikat. Aplikasi tetap dapat digunakan secara utuh tanpa donasi.
+
+---
+
+## 👨‍💻 Pengembang & Hak Cipta
+
+Dirancang dan dikembangkan dengan penuh dedikasi oleh:  
+**[Yanuar Ardhika Rahmadhani Ubaidillah (@ardhikaxx)](https://github.com/ardhikaxx)**  
+*Lead Software Architect & Maintainer*
+
+> **Copyright (c) 2024 - 2026 Yanuar Ardhika Rahmadhani Ubaidillah (@ardhikaxx). All Rights Reserved.**
