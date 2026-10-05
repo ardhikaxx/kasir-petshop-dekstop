@@ -14,13 +14,17 @@ namespace KasirPetShopLauncher
         private const int Port = 8765;
         private static Process _phpProcess = null;
         private static NotifyIcon _trayIcon = null;
-        private static string _logPath = @"C:\xampp\htdocs\kasir-petshop-desktop\storage\logs\launcher_debug.log";
+        private static string _logPath = null;
+        private static string _userDataDir = null;
 
         private static void Log(string msg)
         {
             try
             {
-                File.AppendAllText(_logPath, string.Format("[{0:yyyy-MM-dd HH:mm:ss.fff}] {1}\r\n", DateTime.Now, msg));
+                if (!string.IsNullOrEmpty(_logPath))
+                {
+                    File.AppendAllText(_logPath, string.Format("[{0:yyyy-MM-dd HH:mm:ss.fff}] {1}\r\n", DateTime.Now, msg));
+                }
             }
             catch { }
         }
@@ -28,9 +32,7 @@ namespace KasirPetShopLauncher
         [STAThread]
         static void Main(string[] args)
         {
-            Log("Main started.");
-
-            // Global exception handlers
+            // Global unhandled exception handlers
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             Application.ThreadException += delegate(object s, ThreadExceptionEventArgs e) {
                 Log("ThreadException: " + e.Exception.ToString());
@@ -42,10 +44,9 @@ namespace KasirPetShopLauncher
             bool isNewInstance = false;
             using (Mutex mutex = new Mutex(true, "KasirPetShopDesktopSingleInstanceMutex", out isNewInstance))
             {
-                Log("Mutex check: isNewInstance = " + isNewInstance);
                 if (!isNewInstance)
                 {
-                    Log("Application is already running. Focusing/opening POS window...");
+                    // Already running: bring active POS window to front
                     string existingUrl = string.Format("http://{0}:{1}/pos", Host, Port);
                     LaunchAppWindow(existingUrl);
                     return;
@@ -56,64 +57,96 @@ namespace KasirPetShopLauncher
                     Application.EnableVisualStyles();
                     Application.SetCompatibleTextRenderingDefault(false);
 
-                    // 1. Locate project root directory
+                    // 1. Locate Application Installation Directory
                     string projectDir = FindProjectDirectory();
-                    Log("projectDir = " + projectDir);
                     if (string.IsNullOrEmpty(projectDir))
                     {
-                        MessageBox.Show(
-                            "Folder aplikasi Kasir Pet Shop tidak ditemukan.\nPastikan proyek berada di 'C:\\xampp\\htdocs\\kasir-petshop-desktop' atau folder yang sesuai.",
-                            "Kasir Pet Shop Desktop - Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error
+                        ShowFriendlyError(
+                            "Folder instalasi Kasir Pet Shop tidak ditemukan.",
+                            "Pastikan aplikasi telah diinstal dengan benar melalui installer resmi."
                         );
                         return;
                     }
 
-                    // 2. Locate PHP executable
+                    // 2. Setup Persistent User Data Directory in %LOCALAPPDATA%\KasirPetShop
+                    string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                    _userDataDir = Path.Combine(localAppData, "KasirPetShop");
+                    string dataDir = Path.Combine(_userDataDir, "data");
+                    string backupsDir = Path.Combine(_userDataDir, "backups");
+                    string logsDir = Path.Combine(_userDataDir, "logs");
+                    string storageDir = Path.Combine(_userDataDir, "storage");
+
+                    Directory.CreateDirectory(dataDir);
+                    Directory.CreateDirectory(backupsDir);
+                    Directory.CreateDirectory(logsDir);
+                    Directory.CreateDirectory(storageDir);
+
+                    _logPath = Path.Combine(logsDir, "launcher.log");
+                    Log("=== Kasir Pet Shop Desktop Started ===");
+                    Log("App Directory: " + projectDir);
+                    Log("User Data Directory: " + _userDataDir);
+
+                    // 3. Setup Persistent SQLite Database
+                    string userDbPath = Path.Combine(dataDir, "database.sqlite");
+                    string appDefaultDb = Path.Combine(projectDir, "database", "database.sqlite");
+
+                    if (!File.Exists(userDbPath))
+                    {
+                        if (File.Exists(appDefaultDb))
+                        {
+                            File.Copy(appDefaultDb, userDbPath, false);
+                            Log("Copied initial clean database to user data directory.");
+                        }
+                        else
+                        {
+                            using (File.Create(userDbPath)) { }
+                            Log("Created new empty SQLite database in user data directory.");
+                        }
+                    }
+                    else
+                    {
+                        Log("Existing user database found at: " + userDbPath);
+                    }
+
+                    // 4. Locate PHP Executable
                     string phpPath = FindPhpExecutable(projectDir);
-                    Log("phpPath = " + phpPath);
+                    Log("PHP Executable: " + phpPath);
                     if (string.IsNullOrEmpty(phpPath))
                     {
-                        MessageBox.Show(
-                            "PHP tidak ditemukan pada sistem komputer ini.\nPastikan XAMPP terinstall di 'C:\\xampp\\php\\php.exe' atau terdaftar di PATH environment.",
-                            "Kasir Pet Shop Desktop - Error",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Error
+                        ShowFriendlyError(
+                            "Komponen PHP runtime tidak ditemukan.",
+                            "Runtime mandiri aplikasi rusak atau belum terpasang. Silakan instal ulang aplikasi."
                         );
                         return;
                     }
 
-                    // 3. Create desktop shortcut pointing to this executable
+                    string phpDir = Path.GetDirectoryName(phpPath);
+                    string phpIni = Path.Combine(phpDir, "php.ini");
+                    string iniArg = File.Exists(phpIni) ? string.Format("-c \"{0}\" ", phpIni) : "";
+
+                    // 5. Ensure Desktop Shortcut exists
                     string currentExe = Process.GetCurrentProcess().MainModule.FileName;
                     CreateDesktopShortcut(currentExe, projectDir);
-                    Log("Desktop shortcut confirmed at Desktop.");
 
-                    // 4. Initialize Database & Migrations silently
-                    Log("Running silent app:desktop-init...");
-                    RunSilentProcess(phpPath, "artisan app:desktop-init", projectDir);
-                    Log("app:desktop-init finished.");
+                    // 6. Run Safe Migrations Silently
+                    Log("Running safe migration bootstrap...");
+                    RunSilentProcess(phpPath, iniArg + "artisan app:desktop-init", projectDir, userDbPath, _userDataDir);
+                    Log("Migration bootstrap complete.");
 
-                    // 5. Register application exit handlers
-                    AppDomain.CurrentDomain.ProcessExit += delegate {
-                        Log("ProcessExit event received.");
-                        CleanupPhp();
-                    };
-                    Application.ApplicationExit += delegate {
-                        Log("ApplicationExit event received.");
-                        CleanupPhp();
-                    };
+                    // 7. Register Process Exit Handlers
+                    AppDomain.CurrentDomain.ProcessExit += delegate { CleanupPhp(); };
+                    Application.ApplicationExit += delegate { CleanupPhp(); };
 
-                    // 6. Start local PHP server if not already running on port 8765
+                    // 8. Start Local PHP Server (bound strictly to 127.0.0.1)
                     if (!IsPortInUse(Port))
                     {
-                        Log("Starting background PHP built-in server on " + Host + ":" + Port + "...");
+                        Log("Starting PHP local server on " + Host + ":" + Port + "...");
                         string publicDir = Path.Combine(projectDir, "public");
                         _phpProcess = new Process();
                         _phpProcess.StartInfo = new ProcessStartInfo
                         {
                             FileName = phpPath,
-                            Arguments = string.Format("-S {0}:{1} -t \"{2}\"", Host, Port, publicDir),
+                            Arguments = string.Format("{0}-S {1}:{2} -t \"{3}\"", iniArg, Host, Port, publicDir),
                             WorkingDirectory = projectDir,
                             CreateNoWindow = true,
                             UseShellExecute = false,
@@ -121,79 +154,75 @@ namespace KasirPetShopLauncher
                             RedirectStandardError = true,
                             WindowStyle = ProcessWindowStyle.Hidden
                         };
+
+                        // Inject Persistent User Data Environment Variables
+                        _phpProcess.StartInfo.EnvironmentVariables["KASIR_USER_DATA_DIR"] = _userDataDir;
+                        _phpProcess.StartInfo.EnvironmentVariables["DB_DATABASE"] = userDbPath;
+                        _phpProcess.StartInfo.EnvironmentVariables["APP_URL"] = string.Format("http://{0}:{1}", Host, Port);
+
                         _phpProcess.EnableRaisingEvents = true;
                         _phpProcess.OutputDataReceived += delegate(object s, DataReceivedEventArgs e) {
-                            if (!string.IsNullOrEmpty(e.Data))
-                            {
-                                Log("PHP stdout: " + e.Data);
-                            }
+                            if (!string.IsNullOrEmpty(e.Data)) Log("PHP: " + e.Data);
                         };
                         _phpProcess.ErrorDataReceived += delegate(object s, DataReceivedEventArgs e) {
-                            if (!string.IsNullOrEmpty(e.Data))
-                            {
-                                Log("PHP stderr: " + e.Data);
-                            }
+                            if (!string.IsNullOrEmpty(e.Data)) Log("PHP Log: " + e.Data);
                         };
                         _phpProcess.Exited += delegate {
-                            Log("WARNING: PHP process exited!");
+                            Log("WARNING: Local PHP process exited.");
                         };
 
                         _phpProcess.Start();
                         _phpProcess.BeginOutputReadLine();
                         _phpProcess.BeginErrorReadLine();
-                        Log("PHP process started, pid = " + _phpProcess.Id);
 
-                        // Wait up to 3 seconds for server to respond
+                        // Wait up to 3.5 seconds for server to bind
                         int retries = 0;
-                        while (!IsPortInUse(Port) && retries < 15)
+                        while (!IsPortInUse(Port) && retries < 18)
                         {
                             Thread.Sleep(200);
                             retries++;
                         }
-                        Log("PHP server wait completed, retries = " + retries + ", isPortInUse = " + IsPortInUse(Port));
+                        Log("PHP server readiness confirmed. isPortInUse = " + IsPortInUse(Port));
                     }
                     else
                     {
                         Log("Port 8765 is already listening.");
                     }
 
-                    // 7. Setup URLs
+                    // 9. URLs
                     string posUrl = string.Format("http://{0}:{1}/pos", Host, Port);
-                    string dashboardUrl = string.Format("http://{0}:{1}/", Host, Port);
+                    string dashboardUrl = string.Format("http://{0}:{1}/dashboard", Host, Port);
                     string productsUrl = string.Format("http://{0}:{1}/products", Host, Port);
                     string reportsUrl = string.Format("http://{0}:{1}/reports", Host, Port);
 
-                    // 8. Setup System Tray Icon
-                    Log("Setting up System Tray Icon...");
+                    // 10. System Tray Icon Setup
                     _trayIcon = new NotifyIcon();
-                    _trayIcon.Icon = SystemIcons.Application;
+                    try
+                    {
+                        _trayIcon.Icon = Icon.ExtractAssociatedIcon(currentExe);
+                    }
+                    catch
+                    {
+                        _trayIcon.Icon = SystemIcons.Application;
+                    }
                     _trayIcon.Text = "Kasir Pet Shop Desktop (Aktif)";
                     _trayIcon.Visible = true;
 
                     ContextMenu contextMenu = new ContextMenu();
-
-                    MenuItem titleItem = new MenuItem("🐾 Kasir Pet Shop Desktop (Aktif)");
-                    titleItem.Enabled = false;
-                    contextMenu.MenuItems.Add(titleItem);
-
+                    MenuItem header = new MenuItem("🐾 Kasir Pet Shop Desktop (Aktif)");
+                    header.Enabled = false;
+                    contextMenu.MenuItems.Add(header);
                     contextMenu.MenuItems.Add("-");
 
-                    contextMenu.MenuItems.Add("Buka Layar Kasir (POS)", delegate {
-                        LaunchAppWindow(posUrl);
-                    });
+                    contextMenu.MenuItems.Add("Buka Kasir (POS)", delegate { LaunchAppWindow(posUrl); });
+                    contextMenu.MenuItems.Add("Buka Dashboard", delegate { LaunchAppWindow(dashboardUrl); });
+                    contextMenu.MenuItems.Add("Buka Katalog Produk", delegate { LaunchAppWindow(productsUrl); });
+                    contextMenu.MenuItems.Add("Buka Laporan Penjualan", delegate { LaunchAppWindow(reportsUrl); });
+                    contextMenu.MenuItems.Add("-");
 
-                    contextMenu.MenuItems.Add("Buka Dashboard", delegate {
-                        LaunchAppWindow(dashboardUrl);
+                    contextMenu.MenuItems.Add("Buka Folder Data Pengguna", delegate {
+                        try { Process.Start("explorer.exe", _userDataDir); } catch { }
                     });
-
-                    contextMenu.MenuItems.Add("Buka Katalog Produk", delegate {
-                        LaunchAppWindow(productsUrl);
-                    });
-
-                    contextMenu.MenuItems.Add("Buka Laporan Penjualan", delegate {
-                        LaunchAppWindow(reportsUrl);
-                    });
-
                     contextMenu.MenuItems.Add("-");
 
                     contextMenu.MenuItems.Add("Tutup Kasir Pet Shop (Keluar)", delegate {
@@ -209,41 +238,33 @@ namespace KasirPetShopLauncher
                     });
 
                     _trayIcon.ContextMenu = contextMenu;
-                    _trayIcon.DoubleClick += delegate {
-                        LaunchAppWindow(posUrl);
-                    };
+                    _trayIcon.DoubleClick += delegate { LaunchAppWindow(posUrl); };
 
                     _trayIcon.ShowBalloonTip(
                         3000,
                         "Kasir Pet Shop Desktop",
-                        "Aplikasi kasir berjalan offline. Klik ganda ikon ini kapan saja untuk membuka layar kasir.",
+                        "Aplikasi berjalan offline. Klik ganda ikon ini kapan saja untuk membuka layar kasir.",
                         ToolTipIcon.Info
                     );
-                    Log("System Tray icon ready.");
 
-                    // 9. Launch Desktop App Window
-                    Log("Launching app window: " + posUrl);
+                    // 11. Launch Dedicated Desktop Window
+                    Log("Opening POS application window: " + posUrl);
                     LaunchAppWindow(posUrl);
 
-                    // 10. Run Application message loop with ApplicationContext
-                    Log("Entering Application.Run(new KasirAppContext())...");
+                    // 12. Run Application Event Loop
                     Application.Run(new KasirAppContext());
-                    Log("Application.Run exited.");
                 }
                 catch (Exception ex)
                 {
                     Log("Exception in Main: " + ex.ToString());
-                    MessageBox.Show(
-                        "Terjadi kesalahan saat memulai aplikasi: " + ex.Message,
-                        "Kasir Pet Shop Desktop - Error",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
+                    ShowFriendlyError(
+                        "Terjadi kesalahan saat memulai aplikasi Kasir Pet Shop.",
+                        "Detail masalah telah disimpan di: " + (_logPath ?? "folder data aplikasi.")
                     );
                     CleanupPhp();
                 }
                 finally
                 {
-                    Log("Finally block reached, calling CleanupPhp().");
                     CleanupPhp();
                 }
             }
@@ -258,6 +279,13 @@ namespace KasirPetShopLauncher
             string parent = parentInfo != null ? parentInfo.FullName : null;
             if (parent != null && File.Exists(Path.Combine(parent, "artisan"))) return parent;
 
+            string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            string appDataInstalled = Path.Combine(localAppData, "Programs", "KasirPetShop");
+            if (File.Exists(Path.Combine(appDataInstalled, "artisan"))) return appDataInstalled;
+
+            string cInstalled = @"C:\KasirPetShop";
+            if (File.Exists(Path.Combine(cInstalled, "artisan"))) return cInstalled;
+
             string defaultPath = @"C:\xampp\htdocs\kasir-petshop-desktop";
             if (File.Exists(Path.Combine(defaultPath, "artisan"))) return defaultPath;
 
@@ -266,12 +294,23 @@ namespace KasirPetShopLauncher
 
         private static string FindPhpExecutable(string projectDir)
         {
+            // 1. Embedded portable PHP inside app directory
             string localPhp = Path.Combine(projectDir, "php", "php.exe");
             if (File.Exists(localPhp)) return localPhp;
 
+            // 2. Sibling php folder
+            string parentDir = Path.GetDirectoryName(projectDir);
+            if (!string.IsNullOrEmpty(parentDir))
+            {
+                string siblingPhp = Path.Combine(parentDir, "php", "php.exe");
+                if (File.Exists(siblingPhp)) return siblingPhp;
+            }
+
+            // 3. Fallback: XAMPP PHP (development)
             string xamppPhp = @"C:\xampp\php\php.exe";
             if (File.Exists(xamppPhp)) return xamppPhp;
 
+            // 4. PATH candidates
             string envPath = Environment.GetEnvironmentVariable("PATH");
             if (envPath != null)
             {
@@ -308,7 +347,7 @@ namespace KasirPetShopLauncher
             return false;
         }
 
-        private static void RunSilentProcess(string fileName, string args, string workingDir)
+        private static void RunSilentProcess(string fileName, string args, string workingDir, string dbPath, string userDataDir)
         {
             try
             {
@@ -322,8 +361,11 @@ namespace KasirPetShopLauncher
                     UseShellExecute = false,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
+                if (!string.IsNullOrEmpty(dbPath)) p.StartInfo.EnvironmentVariables["DB_DATABASE"] = dbPath;
+                if (!string.IsNullOrEmpty(userDataDir)) p.StartInfo.EnvironmentVariables["KASIR_USER_DATA_DIR"] = userDataDir;
+
                 p.Start();
-                p.WaitForExit(10000);
+                p.WaitForExit(15000);
             }
             catch { }
         }
@@ -377,10 +419,21 @@ namespace KasirPetShopLauncher
                     shortcut.GetType().InvokeMember("TargetPath", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { exePath });
                     shortcut.GetType().InvokeMember("WorkingDirectory", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { projectDir });
                     shortcut.GetType().InvokeMember("Description", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { "Aplikasi Kasir Pet Shop Desktop Offline" });
+                    shortcut.GetType().InvokeMember("IconLocation", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { exePath + ",0" });
                     shortcut.GetType().InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, shortcut, null);
                 }
             }
             catch { }
+        }
+
+        private static void ShowFriendlyError(string title, string suggestion)
+        {
+            MessageBox.Show(
+                title + "\n\n" + suggestion,
+                "Kasir Pet Shop Desktop",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning
+            );
         }
 
         private static void CleanupPhp()
@@ -390,16 +443,13 @@ namespace KasirPetShopLauncher
                 Log("CleanupPhp called.");
                 if (_phpProcess != null && !_phpProcess.HasExited)
                 {
-                    Log("Killing _phpProcess pid: " + _phpProcess.Id);
+                    Log("Terminating PHP process pid: " + _phpProcess.Id);
                     _phpProcess.Kill();
                     _phpProcess.Dispose();
                     _phpProcess = null;
                 }
             }
-            catch (Exception ex)
-            {
-                Log("CleanupPhp exception: " + ex.Message);
-            }
+            catch { }
         }
     }
 

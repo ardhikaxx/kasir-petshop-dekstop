@@ -35,7 +35,15 @@ return [
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'database' => env('DB_DATABASE', function () {
+                $userDataDir = env('KASIR_USER_DATA_DIR')
+                    ?? (isset($_SERVER['LOCALAPPDATA']) ? $_SERVER['LOCALAPPDATA'].DIRECTORY_SEPARATOR.'KasirPetShop' : null);
+                if ($userDataDir && is_dir($userDataDir.DIRECTORY_SEPARATOR.'data')) {
+                    return $userDataDir.DIRECTORY_SEPARATOR.'data'.DIRECTORY_SEPARATOR.'database.sqlite';
+                }
+
+                return database_path('database.sqlite');
+            }),
             'prefix' => '',
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
             'busy_timeout' => null,

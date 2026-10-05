@@ -31,7 +31,13 @@ class BackupService
      */
     public function getBackupDirectory(): string
     {
-        $dir = storage_path('app/backups');
+        $userDataDir = env('KASIR_USER_DATA_DIR')
+            ?? (isset($_SERVER['LOCALAPPDATA']) ? $_SERVER['LOCALAPPDATA'].DIRECTORY_SEPARATOR.'KasirPetShop' : null);
+
+        $dir = ($userDataDir && is_dir($userDataDir))
+            ? $userDataDir.DIRECTORY_SEPARATOR.'backups'
+            : storage_path('app/backups');
+
         if (! File::isDirectory($dir)) {
             File::makeDirectory($dir, 0755, true);
         }
