@@ -7,6 +7,7 @@ use App\Models\Service;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ReportService
@@ -169,9 +170,9 @@ class ReportService
     /**
      * Get Best Selling Products report.
      *
-     * @return \Illuminate\Support\Collection<int, mixed>
+     * @return Collection<int, mixed>
      */
-    public function getBestSellingProducts(?string $startDate = null, ?string $endDate = null, int $limit = 20): \Illuminate\Support\Collection
+    public function getBestSellingProducts(?string $startDate = null, ?string $endDate = null, int $limit = 20): Collection
     {
         $start = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::today('Asia/Jakarta')->subDays(30)->startOfDay();
         $end = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::today('Asia/Jakarta')->endOfDay();
@@ -205,9 +206,9 @@ class ReportService
     /**
      * Get Best Selling Services report.
      *
-     * @return \Illuminate\Support\Collection<int, mixed>
+     * @return Collection<int, mixed>
      */
-    public function getBestSellingServices(?string $startDate = null, ?string $endDate = null, int $limit = 20): \Illuminate\Support\Collection
+    public function getBestSellingServices(?string $startDate = null, ?string $endDate = null, int $limit = 20): Collection
     {
         $start = $startDate ? Carbon::parse($startDate)->startOfDay() : Carbon::today('Asia/Jakarta')->subDays(30)->startOfDay();
         $end = $endDate ? Carbon::parse($endDate)->endOfDay() : Carbon::today('Asia/Jakarta')->endOfDay();

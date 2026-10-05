@@ -6,6 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Kasir Pet Shop Desktop') - {{ \App\Models\Setting::get('store_name', 'Pet Care & Shop') }}</title>
 
+    <!-- Favicon & Brand Icons (100% Local) -->
+    <link rel="icon" type="image/svg+xml" href="{{ asset('images/logo.svg') }}">
+    <link rel="shortcut icon" href="{{ asset('images/logo.svg') }}">
+
     <!-- 100% Local Offline CSS Stylesheet (Zero CDN) -->
     <link rel="stylesheet" href="{{ asset('css/petshop-ui.css') }}">
     @stack('styles')
@@ -15,13 +19,9 @@
         <!-- Desktop Topbar Navigation -->
         <header class="app-topbar">
             <div class="topbar-brand">
-                <a href="{{ route('pos.index') }}" style="display:flex;align-items:center;gap:0.6rem;color:#ffffff;text-decoration:none;">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" style="display:none;"/>
-                        <!-- Pet Paw SVG -->
-                        <path d="M12 10c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm-4.5 1c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zm9 0c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zm-4.5 3c-2.33 0-4.31 1.46-5.11 3.5h10.22c-.8-2.04-2.78-3.5-5.11-3.5z" fill="currentColor"/>
-                    </svg>
-                    <span>{{ \App\Models\Setting::get('store_name', 'Pet Care & Shop') }}</span>
+                <a href="{{ route('pos.index') }}" style="display:flex;align-items:center;gap:0.75rem;color:#ffffff;text-decoration:none;">
+                    <img src="{{ asset('images/logo.svg') }}" alt="Logo Klinik" style="height:36px;width:36px;border-radius:10px;object-fit:cover;box-shadow:0 2px 6px rgba(0,0,0,0.18);border:1.5px solid rgba(255,255,255,0.45);flex-shrink:0;" />
+                    <span style="font-weight:700;font-size:1.05rem;letter-spacing:-0.01em;">{{ \App\Models\Setting::get('store_name', 'Pet Care & Shop') }}</span>
                 </a>
                 <span class="brand-badge">POS</span>
             </div>

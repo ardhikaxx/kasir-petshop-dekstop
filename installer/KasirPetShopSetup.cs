@@ -68,7 +68,7 @@ namespace KasirPetShopInstaller
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(248, 250, 252);
+            this.BackColor = Color.FromArgb(255, 245, 245);
             this.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
 
             try
@@ -81,7 +81,7 @@ namespace KasirPetShopInstaller
             headerPanel = new Panel();
             headerPanel.Dock = DockStyle.Top;
             headerPanel.Height = 82;
-            headerPanel.BackColor = Color.FromArgb(13, 148, 136); // Teal 600
+            headerPanel.BackColor = Color.FromArgb(216, 140, 154); // Mauve/Rose #D88C9A
 
             titleLabel = new Label();
             titleLabel.Text = "🐾 Kasir Pet Shop Desktop";
@@ -93,7 +93,7 @@ namespace KasirPetShopInstaller
 
             subtitleLabel = new Label();
             subtitleLabel.Text = "Sistem Kasir POS & Inventaris Pet Shop (100% Offline, Mandiri)";
-            subtitleLabel.ForeColor = Color.FromArgb(204, 251, 241); // Teal 100
+            subtitleLabel.ForeColor = Color.FromArgb(253, 232, 232); // Rose soft #FDE8E8
             subtitleLabel.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
             subtitleLabel.Location = new Point(23, 46);
             subtitleLabel.AutoSize = true;
@@ -172,7 +172,7 @@ namespace KasirPetShopInstaller
 
             installButton = new Button();
             installButton.Text = "Pasang Sekarang";
-            installButton.BackColor = Color.FromArgb(13, 148, 136);
+            installButton.BackColor = Color.FromArgb(216, 140, 154); // #D88C9A
             installButton.ForeColor = Color.White;
             installButton.FlatStyle = FlatStyle.Flat;
             installButton.FlatAppearance.BorderSize = 0;
@@ -208,7 +208,7 @@ namespace KasirPetShopInstaller
 
             progressDetailLabel = new Label();
             progressDetailLabel.Text = "Memulai ekstraksi komponen mandiri...";
-            progressDetailLabel.ForeColor = Color.FromArgb(100, 116, 139);
+            progressDetailLabel.ForeColor = Color.FromArgb(138, 110, 115);
             progressDetailLabel.Location = new Point(24, 115);
             progressDetailLabel.Size = new Size(510, 50);
             progressDetailLabel.Visible = false;
@@ -217,7 +217,7 @@ namespace KasirPetShopInstaller
             // Finish Controls (hidden initially)
             finishTitleLabel = new Label();
             finishTitleLabel.Text = "🎉 Instalasi Berhasil!";
-            finishTitleLabel.ForeColor = Color.FromArgb(15, 118, 110);
+            finishTitleLabel.ForeColor = Color.FromArgb(183, 110, 121); // #B76E79
             finishTitleLabel.Font = new Font("Segoe UI", 15f, FontStyle.Bold);
             finishTitleLabel.Location = new Point(24, 30);
             finishTitleLabel.AutoSize = true;
@@ -229,7 +229,7 @@ namespace KasirPetShopInstaller
                                    "• Seluruh runtime PHP & Laravel 13 telah terbundel secara mandiri.\n" +
                                    "• Database SQLite telah diinisialisasi dan siap digunakan offline.\n" +
                                    "• Anda dapat membuka aplikasi kapan saja melalui shortcut Desktop atau Start Menu.";
-            finishDescLabel.ForeColor = Color.FromArgb(51, 65, 85);
+            finishDescLabel.ForeColor = Color.FromArgb(67, 49, 51);
             finishDescLabel.Location = new Point(24, 75);
             finishDescLabel.Size = new Size(510, 120);
             finishDescLabel.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
@@ -238,7 +238,7 @@ namespace KasirPetShopInstaller
 
             finishButton = new Button();
             finishButton.Text = "Selesai";
-            finishButton.BackColor = Color.FromArgb(13, 148, 136);
+            finishButton.BackColor = Color.FromArgb(216, 140, 154); // #D88C9A
             finishButton.ForeColor = Color.White;
             finishButton.FlatStyle = FlatStyle.Flat;
             finishButton.FlatAppearance.BorderSize = 0;
