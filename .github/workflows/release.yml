@@ -42,6 +42,7 @@ jobs:
           draft: false
           prerelease: false
           files: |
+            dist/KasirPetShop-Setup.exe
             dist/PetShopPOS-Setup.exe
             build/app.ico
             build/logo-preview.png

@@ -45,13 +45,36 @@ Write-Host "`n[4/7] Assembling portable release directory..." -ForegroundColor Y
 if (Test-Path $portableAppDir) { Remove-Item $portableAppDir -Recurse -Force }
 New-Item -ItemType Directory -Path $portableAppDir -Force | Out-Null
 
+# Locate PHP Runtime (Supports local XAMPP and CI/CD GitHub Actions runner)
+$phpSourceDir = $null
+if (Test-Path "C:\xampp\php\php.exe") {
+    $phpSourceDir = "C:\xampp\php"
+} elseif (Get-Command php -ErrorAction SilentlyContinue) {
+    $phpSourceDir = Split-Path (Get-Command php).Source
+}
+
+if (-not $phpSourceDir -or -not (Test-Path "$phpSourceDir\php.exe")) {
+    throw "PHP Runtime not found! Ensure PHP is installed in C:\xampp\php or available in system PATH."
+}
+Write-Host "  - PHP Runtime detected at: $phpSourceDir" -ForegroundColor Green
+
 # Copy Portable PHP
 $phpDest = Join-Path $portableAppDir "php"
 New-Item -ItemType Directory -Path "$phpDest\ext" -Force | Out-Null
-Copy-Item "C:\xampp\php\*.dll" "$phpDest\" -Force
-Copy-Item "C:\xampp\php\php.exe" "$phpDest\" -Force
-Copy-Item "C:\xampp\php\ext\*.dll" "$phpDest\ext\" -Force
-Copy-Item "dist\test_php\php.ini" "$phpDest\php.ini" -Force
+Copy-Item "$phpSourceDir\*.dll" "$phpDest\" -Force -ErrorAction SilentlyContinue
+Copy-Item "$phpSourceDir\php.exe" "$phpDest\" -Force
+if (Test-Path "$phpSourceDir\ext") {
+    Copy-Item "$phpSourceDir\ext\*.dll" "$phpDest\ext\" -Force -ErrorAction SilentlyContinue
+}
+
+# Copy php.ini configuration
+if (Test-Path "build\php-portable.ini") {
+    Copy-Item "build\php-portable.ini" "$phpDest\php.ini" -Force
+} elseif (Test-Path "dist\test_php\php.ini") {
+    Copy-Item "dist\test_php\php.ini" "$phpDest\php.ini" -Force
+} elseif (Test-Path "$phpSourceDir\php.ini") {
+    Copy-Item "$phpSourceDir\php.ini" "$phpDest\php.ini" -Force
+}
 
 # Copy Core Laravel Folders
 $appDirs = @('app', 'bootstrap', 'config', 'database', 'public', 'resources', 'routes', 'vendor')
@@ -74,7 +97,11 @@ foreach ($sd in $storageDirs) {
 
 # Copy Essential App Files
 Copy-Item "artisan" "$portableAppDir\artisan" -Force
-Copy-Item ".env" "$portableAppDir\.env" -Force
+if (Test-Path ".env") {
+    Copy-Item ".env" "$portableAppDir\.env" -Force
+} elseif (Test-Path ".env.example") {
+    Copy-Item ".env.example" "$portableAppDir\.env" -Force
+}
 Copy-Item "composer.json" "$portableAppDir\composer.json" -Force
 Copy-Item "composer.lock" "$portableAppDir\composer.lock" -Force
 Copy-Item "KasirPetShop.exe" "$portableAppDir\KasirPetShop.exe" -Force
@@ -118,6 +145,9 @@ Write-Host "`n[6/7] Compiling standalone Windows installer (PetShopPOS-Setup.exe
     /r:System.IO.Compression.dll `
     /r:System.IO.Compression.FileSystem.dll `
     installer\KasirPetShopSetup.cs
+
+$installerAlt = Join-Path $distDir "KasirPetShop-Setup.exe"
+Copy-Item $installerExe $installerAlt -Force
 
 $exeSize = (Get-Item $installerExe).Length / 1MB
 Write-Host ("  - Installer generated: {0:N2} MB" -f $exeSize) -ForegroundColor Green
