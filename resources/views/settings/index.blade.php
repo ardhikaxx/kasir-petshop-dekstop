@@ -125,4 +125,34 @@
         </form>
     </div>
 </div>
+
+<!-- Danger Zone: Reset Transaksi Kasir -->
+<div class="card" style="max-width: 800px; margin: 2rem auto 0 auto; border: 1px solid #fecaca; background: #fff;">
+    <div class="card-header" style="background: #fef2f2; border-bottom: 1px solid #fee2e2;">
+        <h2 class="card-title" style="color: var(--danger); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <span>Zona Khusus: Reset Riwayat Transaksi</span>
+        </h2>
+    </div>
+    <div class="card-body">
+        <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.25rem;">
+            Fitur ini akan menghapus <strong>seluruh data transaksi kasir, item penjualan, dan mereset nomor urut nota kembali ke 1</strong>. Data master seperti katalog produk, kategori, layanan jasa, dan pengaturan toko akan tetap aman.
+        </p>
+        <form method="POST" action="{{ route('settings.clear-transactions') }}" 
+              onsubmit="return confirm('PERINGATAN: Apakah Anda benar-benar yakin ingin menghapus SELURUH riwayat transaksi kasir? Tindakan ini tidak dapat dibatalkan!');">
+            @csrf
+            <button type="submit" class="btn btn-danger">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                <span>Kosongkan Seluruh Riwayat Transaksi</span>
+            </button>
+        </form>
+    </div>
+</div>
 @endsection

@@ -82,6 +82,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
 Route::prefix('settings')->name('settings.')->group(function () {
     Route::get('/', [SettingController::class, 'index'])->name('index');
     Route::post('/', [SettingController::class, 'update'])->name('update');
+    Route::post('/clear-transactions', [SettingController::class, 'clearTransactions'])->name('clear-transactions');
 });
 
 // Local Backup & Restore Routes

@@ -6,6 +6,7 @@ use App\Http\Requests\SettingRequest;
 use App\Services\StoreSettingService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Artisan;
 
 class SettingController extends Controller
 {
@@ -42,5 +43,16 @@ class SettingController extends Controller
 
         return redirect()->route('settings.index')
             ->with('success', 'Pengaturan toko berhasil diperbarui.');
+    }
+
+    /**
+     * Clear all transaction records and reset counter.
+     */
+    public function clearTransactions(): RedirectResponse
+    {
+        Artisan::call('app:clear-transactions', ['--force' => true]);
+
+        return redirect()->route('settings.index')
+            ->with('success', 'Seluruh data transaksi kasir berhasil dihapus dan dikosongkan.');
     }
 }
