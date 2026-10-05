@@ -1,0 +1,49 @@
+name: Build and Release Windows Desktop App
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Standalone Windows Installer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP 8.4
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_sqlite, sqlite3, fileinfo, curl, gd, openssl
+          coverage: none
+
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+
+      - name: Build Windows Installer
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -NoProfile -File build-windows.ps1
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: ${{ github.ref_name }} - Standalone Windows Installer & 100% Offline POS
+          body_path: build/release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            dist/PetShopPOS-Setup.exe
+            build/app.ico
+            build/logo-preview.png
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
